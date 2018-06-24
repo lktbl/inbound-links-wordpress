@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) exit;
 
 // Adding plugin menupoint to dashboard
 add_action('admin_menu', function(){
-  add_submenu_page('options-general.php', 'Inbound links', 'Inbound links', 'manage_options', 'inbound-links', 'inbound_links_admin_page');
+  add_menu_page('Inbound links', 'Inbound links', 'manage_options', 'inbound-links', 'inbound_links_admin_page');
 });
 
 // Adding plugin settings page
@@ -25,13 +25,15 @@ function inbound_links_admin_page(){
 }
 
 // Create data in database for plugin
-add_action( 'admin_init', function() {
+add_action( 'admin_init', function(){
   register_setting( 'inbound-links-settings', 'inbound-links-get-parameter' );
+  register_setting( 'inbound-links-settings', '  inbound-links-ignore-repeating' );
 });
 
 add_action('wp_head', function(){
   // Get plugin settings
   $get_parameter = esc_attr(get_option('inbound-links-get-parameter')) ? esc_attr(get_option('inbound-links-get-parameter')) : 'source' ;
+  $ignore_repeating_value = get_option('inbound-links-ignore-repeating');
 
   if(isset($_GET[$get_parameter]) && $_GET[$get_parameter] != ''){
     global $wp;
@@ -43,17 +45,23 @@ add_action('wp_head', function(){
 
     $table_name = $wpdb->prefix . 'inboundlinks';
 
-    // Save data to db
-  	$wpdb->insert(
-  		$table_name,
-  		array(
-  			'parameter' => $get_parameter,
-  			'value' => $get_parameter_value,
-  			'time' => $current_time,
-        'url' => $current_url,
-        'email' => $current_user_email
-  		)
-  	);
+
+     if(!$ignore_repeating_value || ($_COOKIE['inboundlinks'] != $get_parameter.':'.$get_parameter_value)){
+       wp_enqueue_script('link-tracker-cookie-script', plugins_url('js/cookie_script.js', __FILE__));
+       wp_localize_script( 'link-tracker-cookie-script', 'inboundlinks', array( 'parameter' => $get_parameter, 'value' => $get_parameter_value ));
+
+       // Save data to db
+       $wpdb->insert(
+         $table_name,
+         array(
+           'parameter' => $get_parameter,
+           'value' => $get_parameter_value,
+           'time' => $current_time,
+           'url' => $current_url,
+           'email' => $current_user_email
+         )
+       );
+    }
   }
 
 });
@@ -62,6 +70,9 @@ add_action('admin_head', function(){
   wp_enqueue_style('link-tracker-admin-style', plugins_url('css/admin_style.css', __FILE__));
   wp_enqueue_style('link-tracker-table-style', plugins_url('css/table_style.css', __FILE__));
   wp_enqueue_script('link-tracker-admin-script', plugins_url('js/admin_script.js', __FILE__), array('jquery'));
+  wp_enqueue_script('link-tracker-chart-script', plugins_url('js/Chart.min.js', __FILE__), array('jquery'));
+
+  wp_localize_script( 'link-tracker-admin-script', 'ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php' )));
 });
 
 // Add database to WP if the plugin is activated
@@ -85,4 +96,22 @@ function inbound_links_create_db(){
 
 	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 	dbDelta( $sql );
+}
+
+// Adding listeners for ajax requests
+add_action('wp_ajax_inboundlinks_get_data', 'inboundlinks_serve_data');
+function inboundlinks_serve_data(){
+  global $wpdb;
+  $parameter = sanitize_text_field($_POST['parameter']);
+  $response = [];
+
+  $result = $wpdb->get_results ( "SELECT DISTINCT value FROM wp_inboundlinks WHERE parameter='$parameter'" );
+
+  foreach ($result as $value) {
+    $count = $wpdb->get_results ( "SELECT * FROM wp_inboundlinks WHERE parameter='$parameter' AND value='$value->value'");
+    $response[$value->value] = sizeof($count);
+  }
+
+  echo json_encode($response, true);
+  die();
 }

@@ -1,0 +1,9 @@
+div.chart_container {
+  max-width: 400px;
+  max-height: 400px;
+  display: inline-block !important; }
+
+div.stats_table {
+  display: inline-block !important;
+  vertical-align: top;
+  margin-left: 60px; }
