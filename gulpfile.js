@@ -13,11 +13,11 @@ gulp.task('watch', function () {
   gulp.watch('./sass/*.scss', ['sass']);
 });
 
-// gulp.task('create-zip', () =>
-//     gulp.src(['./assets/**/*', './css/**/*', './js/**/*', './inc/**/*', './admin-page.php', './nopassword.php', './readme.txt'], {base: '.'})
-//         .pipe(zip('nopassword.zip'))
-//         .pipe(gulp.dest('.'))
-// );
+gulp.task('create-zip', () =>
+    gulp.src(['./css/**/*', './js/**/*', './inc/**/*', './inbound-links.php', './readme.txt'], {base: '.'})
+        .pipe(zip('inbound-links.zip'))
+        .pipe(gulp.dest('.'))
+);
 
 gulp.task('css', [ 'watch', 'sass']);
 gulp.task('build', ['sass', 'create-zip']);
