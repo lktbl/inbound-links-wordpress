@@ -8,3 +8,15 @@ For example:
 - Pie chart statistic for incoming traffic
 - Logs every request
 - Option to ignore repeating requests
+
+## Creating production files
+To build production files install Node libraries with
+```
+npm install
+```
+When complete, run
+```
+gulp build
+```
+
+The finished plugin will be `inbound-links.zip`
