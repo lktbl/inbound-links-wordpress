@@ -53,10 +53,58 @@ if ( $current_tab == 'general' ) {
   <?php
 }
 elseif( $current_tab == 'logs' ){
+  global $wpdb;
+  $parameter_to_list = sanitize_text_field($_GET['parameter']);
   ?>
   <div class="wrap">
     <h1>Logs</h1>
-
+    <br>
+    <span>Parameter: </span>
+    <select id="select_parameter">
+      <option id="all" selected="selected">all</option>
+      <?php
+        $exists_parameter = false;
+        $result = $wpdb->get_results ( "SELECT DISTINCT parameter FROM wp_inboundlinks" );
+          foreach ( $result as $value ){
+            if ($parameter_to_list == $value->parameter) {
+              $exists_parameter = true;
+              echo "<option id='$value->parameter' selected='selected'>$value->parameter</option>";
+            }
+            else echo "<option id='$value->parameter'>$value->parameter</option>";
+          }
+      ?>
+    </select>
+    <br><br>
+    <table class="pure-table pure-table-bordered striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Parameter</th>
+          <th>Value</th>
+          <th>URL</th>
+          <th>User Email</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php
+        if ($parameter_to_list && $exists_parameter) {
+          $result = $wpdb->get_results ( "SELECT * FROM wp_inboundlinks WHERE parameter='$parameter_to_list' ORDER BY id DESC" );
+        }
+        else $result = $wpdb->get_results ( "SELECT * FROM wp_inboundlinks ORDER BY id DESC" );
+        foreach ( $result as $value )   {
+        ?>
+          <tr>
+          <td><?php echo $value->id;?></td>
+          <td><?php echo $value->parameter;?></td>
+          <td><?php echo $value->value;?></td>
+          <td><?php echo $value->url;?></td>
+          <td><?php echo $value->email;?></td>
+          <td><?php echo $value->time;?></td>
+          </tr>
+        <?php } ?>
+      </tbody>
+    </table>
   </div>
   <?php
 }
